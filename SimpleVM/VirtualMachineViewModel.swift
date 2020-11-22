@@ -16,7 +16,8 @@ class VirtualMachineViewModel: NSObject, ObservableObject, VZVirtualMachineDeleg
     @Published var kernelURL: URL?
     @Published var initialRamdiskURL: URL?
     @Published var bootableImageURL: URL?
-    
+    @Published var extraImageURL: URL?
+
     @Published var state: VZVirtualMachine.State?
     
     private lazy var consoleWindow: NSWindow = {
@@ -76,7 +77,7 @@ class VirtualMachineViewModel: NSObject, ObservableObject, VZVirtualMachineDeleg
         let bootloader = VZLinuxBootLoader(kernelURL: kernelURL)
         bootloader.initialRamdiskURL = initialRamdiskURL
         bootloader.commandLine = "console=hvc0"
-        
+
         let serial = VZVirtioConsoleDeviceSerialPortConfiguration()
         
         serial.attachment = VZFileHandleSerialPortAttachment(
@@ -93,7 +94,7 @@ class VirtualMachineViewModel: NSObject, ObservableObject, VZVirtualMachineDeleg
         do {
             blockAttachment = try VZDiskImageStorageDeviceAttachment(
                 url: bootableImageURL,
-                readOnly: true
+                readOnly: false
             )
         } catch {
             NSLog("Failed to load bootableImage: \(error)")
@@ -101,18 +102,38 @@ class VirtualMachineViewModel: NSObject, ObservableObject, VZVirtualMachineDeleg
         }
         
         let blockDevice = VZVirtioBlockDeviceConfiguration(attachment: blockAttachment)
+
+        let extraBlockAttachment: VZDiskImageStorageDeviceAttachment
+        var extraBlockDevice: VZVirtioBlockDeviceConfiguration? = nil
+        if let extraImageURL = extraImageURL {
+        do {
+            extraBlockAttachment = try VZDiskImageStorageDeviceAttachment(
+                url: extraImageURL,
+                readOnly: false
+            )
+        } catch {
+            NSLog("Failed to load extraImage: \(error)")
+            return
+        }
         
+        extraBlockDevice = VZVirtioBlockDeviceConfiguration(attachment: extraBlockAttachment)
+        }
+
         let networkDevice = VZVirtioNetworkDeviceConfiguration()
         networkDevice.attachment = VZNATNetworkDeviceAttachment()
         
         let config = VZVirtualMachineConfiguration()
         config.bootLoader = bootloader
         config.cpuCount = 4
-        config.memorySize = 2 * 1024 * 1024 * 1024
+        config.memorySize = 4 * 1024 * 1024 * 1024
         config.entropyDevices = [entropy]
         config.memoryBalloonDevices = [memoryBalloon]
         config.serialPorts = [serial]
-        config.storageDevices = [blockDevice]
+        if let extraBlockDevice = extraBlockDevice {
+            config.storageDevices = [blockDevice, extraBlockDevice]
+        } else {
+            config.storageDevices = [blockDevice]
+        }
         config.networkDevices = [networkDevice]
                 
         do {
@@ -164,7 +185,7 @@ class VirtualMachineViewModel: NSObject, ObservableObject, VZVirtualMachineDeleg
     }
     
     func showConsole() {
-        consoleWindow.setContentSize(NSSize(width: 400, height: 300))
+        consoleWindow.setContentSize(NSSize(width: 1000, height: 600))
         consoleWindow.title = "Console"
         consoleWindowController.showWindow(nil)
     }

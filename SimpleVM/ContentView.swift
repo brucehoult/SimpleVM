@@ -35,6 +35,13 @@ struct ContentView: View {
                     return true
                 }
             
+            Text("extra image: \(viewModel.extraImageURL?.lastPathComponent ?? "(Drag to here)")")
+                .padding([.top, .bottom])
+                .onDrop(of: [.fileURL], isTargeted: nil) { itemProviders -> Bool in
+                    processDropItem(of: .extra, items: itemProviders)
+                    return true
+                }
+
             Spacer()
             
             HStack {
@@ -73,6 +80,7 @@ struct ContentView: View {
         case kernel
         case ramdisk
         case image
+        case extra
     }
     
     private func processDropItem(of type: DropItemType,
@@ -95,6 +103,8 @@ struct ContentView: View {
                     viewModel.initialRamdiskURL = url
                 case .image:
                     viewModel.bootableImageURL = url
+                case .extra:
+                    viewModel.extraImageURL = url
                 }
             }
         }
