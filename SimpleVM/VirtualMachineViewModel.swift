@@ -103,20 +103,20 @@ class VirtualMachineViewModel: NSObject, ObservableObject, VZVirtualMachineDeleg
         
         let blockDevice = VZVirtioBlockDeviceConfiguration(attachment: blockAttachment)
 
-        let extraBlockAttachment: VZDiskImageStorageDeviceAttachment
         var extraBlockDevice: VZVirtioBlockDeviceConfiguration? = nil
         if let extraImageURL = extraImageURL {
-        do {
-            extraBlockAttachment = try VZDiskImageStorageDeviceAttachment(
-                url: extraImageURL,
-                readOnly: false
-            )
-        } catch {
-            NSLog("Failed to load extraImage: \(error)")
-            return
-        }
-        
-        extraBlockDevice = VZVirtioBlockDeviceConfiguration(attachment: extraBlockAttachment)
+            let extraBlockAttachment: VZDiskImageStorageDeviceAttachment
+            do {
+                extraBlockAttachment = try VZDiskImageStorageDeviceAttachment(
+                    url: extraImageURL,
+                    readOnly: false
+                )
+            } catch {
+                NSLog("Failed to load extraImage: \(error)")
+                return
+            }
+            
+            extraBlockDevice = VZVirtioBlockDeviceConfiguration(attachment: extraBlockAttachment)
         }
 
         let networkDevice = VZVirtioNetworkDeviceConfiguration()
